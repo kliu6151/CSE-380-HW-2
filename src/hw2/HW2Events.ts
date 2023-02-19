@@ -52,6 +52,13 @@ export const HW2Events = {
 
     LASER_MINE_COLLISION: "LASER_MINE_COLLISION",
 
-    MINE_EXPLODED: "MINE_EXPLODED"
+    MINE_EXPLODED: "MINE_EXPLODED",
+
+    /**
+     * The event that gets emitted when the player collides with a bubble
+     * 
+     * Has data: { id: number }
+     */
+    PLAYER_BUBBLE_COLLISION: "PLAYER_BUBBLE_COLLISION",
     
 } as const;

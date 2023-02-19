@@ -61,12 +61,13 @@ export default class PlayerController implements AI {
 		this.emitter = new Emitter();
 
 		this.laserTimer = new Timer(2500, this.handleLaserTimerEnd, false);
-		this.hitTimer = new Timer(500, this.handleHitTimerEnd, false);
+		this.hitTimer = new Timer(1000, this.handleHitTimerEnd, false);
 
 		
 		this.receiver.subscribe(HW2Events.SHOOT_LASER);
 		this.receiver.subscribe(HW2Events.PLAYER_MINE_COLLISION);
 		this.receiver.subscribe(HW2Events.DEAD);
+		this.receiver.subscribe(HW2Events.PLAYER_BUBBLE_COLLISION);
 
 
 		this.activate(options);
@@ -178,6 +179,10 @@ export default class PlayerController implements AI {
 				this.handleDeadEvent(event);
 				break;
 			}
+			case HW2Events.PLAYER_BUBBLE_COLLISION: {
+				this.handleBubbleCollisionEvent(event);
+				break;
+			}
 			// case HW2Events.AIR_CHANGE: {
 			// 	console.log("HERE")
 			// 	// this.handleAirChangeEvent(event);
@@ -205,9 +210,9 @@ export default class PlayerController implements AI {
 		this.laserTimer.start();
 	}
 
-	protected handleAirChangeEvent(deltaT: number, event: GameEvent): void {
-		
-		
+	protected handleBubbleCollisionEvent(event: GameEvent): void {
+		this.currentAir = MathUtils.clamp(this.currentAir + 1, this.minAir, this.maxAir);
+		this.emitter.fireEvent(HW2Events.AIR_CHANGE, {curair: this.currentAir, maxair: this.maxAir});
 	}
 
 	protected handleDeadEvent(event: GameEvent): void {

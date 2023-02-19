@@ -168,6 +168,7 @@ export default class HW2Scene extends Scene {
 		this.receiver.subscribe(HW2Events.DEAD);
 		this.receiver.subscribe(HW2Events.HEALTH_CHANGE);
 		this.receiver.subscribe(HW2Events.AIR_CHANGE);
+		// this.receiver.subscribe(HW2Events.PLAYER_BUBBLE_COLLISION);
 
 		// Subscribe to laser events
 		this.receiver.subscribe(HW2Events.FIRING_LASER);
@@ -515,40 +516,62 @@ export default class HW2Scene extends Scene {
 
 		}
 	}
-    /**
-	 * This method handles spawning a bubble from the object-pool of bubbles
-	 * 
-	 * @remark
-	 * 
-	 * If there are no bubbles in the object-pool, then a bubble shouldn't be spawned and 
-	 * the bubble-spawn timer should not be reset. Otherwise a bubble should be spawned
-	 * and the bubble-spawn timer should be reset.
-	 * 
-	 * Bubbles should randomly spawn inside of the padded area of the viewport just below
-	 * the visible region of the viewport. A visualization of the padded viewport is shown 
-     * below. o's represent valid bubble spawn locations. X's represent invalid locations.
-	 * 
-	 * 
-	 * 					 X	 THIS IS OUT OF BOUNDS
-	 * 			 _______________________________________________
-	 * 			|	 THIS IS THE PADDED REGION (OFF SCREEN)		|
-	 * 			|						X					X	|
-	 * 			|		 _______________________________		|
-	 * 			|		|								|		|
-	 * 			|		|								|		|
-	 *	 		|		|	  THIS IS THE VISIBLE		|		|
-	 * 		X	|	X	|			 REGION				|	X	|   X 
-	 * 			|		|								|		|
-	 * 			|		|		X						|		|
-	 * 			|		|_______________________________|		|
-	 * 			|			o			o			o		X	|
-	 * 			|_______________________________________________|
-	 * 
-	 * 							X THIS IS OUT OF BOUNDS
-	 */
-	protected spawnBubble(): void {
-		// TODO spawn bubbles!
-	}
+		/**
+		 * This method handles spawning a bubble from the object-pool of bubbles
+		 * 
+		 * @remark
+		 * 
+		 * If there are no bubbles in the object-pool, then a bubble shouldn't be spawned and 
+		 * the bubble-spawn timer should not be reset. Otherwise a bubble should be spawned
+		 * and the bubble-spawn timer should be reset.
+		 * 
+		 * Bubbles should randomly spawn inside of the padded area of the viewport just below
+		 * the visible region of the viewport. A visualization of the padded viewport is shown 
+		 * below. o's represent valid bubble spawn locations. X's represent invalid locations.
+		 * 
+		 * 
+		 * 					 X	 THIS IS OUT OF BOUNDS
+		 * 			 _______________________________________________
+		 * 			|	 THIS IS THE PADDED REGION (OFF SCREEN)		|
+		 * 			|						X					X	|
+		 * 			|		 _______________________________		|
+		 * 			|		|								|		|
+		 * 			|		|								|		|
+		 *	 		|		|	  THIS IS THE VISIBLE		|		|
+		* 		X	|	X	|			 REGION				|	X	|   X 
+		* 			|		|								|		|
+		* 			|		|		X						|		|
+		* 			|		|_______________________________|		|
+		* 			|			o			o			o		X	|
+		* 			|_______________________________________________|
+		* 
+		* 							X THIS IS OUT OF BOUNDS
+		*/
+		protected spawnBubble(): void {
+			// Find the first visible bubble
+			// Check if there are any inactive bubbles in the object pool
+			let inactiveBubbles = this.bubbles.filter((bubble: Graphic) => !bubble.visible);
+    
+			if (inactiveBubbles.length === 0) {
+				// If there are no inactive bubbles, do nothing
+				return;
+			}
+			
+			// Pick a random inactive bubble from the object pool
+			let bubble = inactiveBubbles[Math.floor(Math.random() * inactiveBubbles.length)];
+			
+			// Set the bubble to be visible
+			bubble.visible = true;
+		
+			// Set the position of the bubble to a random location in the padded region of the viewport
+			let viewportSize = this.viewport.getHalfSize().scaled(2);
+			let paddedViewportSize = viewportSize.clone().add(this.worldPadding);
+			let bubblePosition = RandUtils.randVec(paddedViewportSize.x, paddedViewportSize.x, paddedViewportSize.y - viewportSize.y, viewportSize.y);
+			bubble.position.copy(bubblePosition);
+		
+			// Reset the bubble spawn timer
+			this.bubbleSpawnTimer.reset();
+		}
 	/**
 	 * This function takes in a GameNode that may be out of bounds of the viewport and
 	 * "kills" it as if it was destroyed through usual collision. This is done so that
@@ -745,8 +768,16 @@ export default class HW2Scene extends Scene {
 	 * an AABB and a Circle
 	 */
 	public handleBubblePlayerCollisions(): number {
-		// TODO check for collisions between the player and the bubbles
-        return;
+		let collisions = 0;
+		  for (let bubble of this.bubbles) {
+			if (bubble.visible && HW2Scene.checkAABBtoCircleCollision(this.player.collisionShape.getBoundingRect(), bubble.collisionShape.getBoundingCircle())) {
+				this.emitter.fireEvent(HW2Events.PLAYER_BUBBLE_COLLISION, {id: bubble.id});
+				collisions += 1;
+				bubble.visible = false;
+			}
+		}	
+
+		return collisions;
 	}
 
 	/**
@@ -819,8 +850,16 @@ export default class HW2Scene extends Scene {
 	 * @see MathUtils for more information about MathUtil functions
 	 */
 	public static checkAABBtoCircleCollision(aabb: AABB, circle: Circle): boolean {
-        // TODO implement collision detection for AABBs and Circles
-        return;
+        let closestX = MathUtils.clamp(circle.center.x, aabb.topLeft.x, aabb.topRight.x);
+		let closestY = MathUtils.clamp(circle.center.y, aabb.topLeft.y, aabb.bottomLeft.y);
+
+		// Calculate the distance between the closest point and the center of the circle
+		let distanceX = circle.center.x - closestX;
+		let distanceY = circle.center.y - closestY;
+		let distanceSquared = distanceX * distanceX + distanceY * distanceY;
+
+		// Check if the circle is colliding with the AABB
+		return distanceSquared < circle.radius * circle.radius;
 	}
 
     /** Methods for locking and wrapping nodes */
