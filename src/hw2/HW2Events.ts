@@ -8,7 +8,18 @@ export const HW2Events = {
      * Has data: { id: number }
      */
 	PLAYER_MINE_COLLISION: "PLAYER_MINE_COLLISION", 
-
+    /**
+     * The event that gets emitted when the player's health changes
+     * 
+     * Has data: { curhealth: number, maxhealth: number }
+     */
+    HEALTH_CHANGE: "HEALTH_CHANGE",
+    /**
+     * The event that gets emitted when the player's air changes
+     * 
+     * Has data: { curair: number, maxair: number }
+     */
+    AIR_CHANGE: "AIR_CHANGE",
     /**
      * The event that gets emitted when the charge of the player's laser beam changes
      * 
