@@ -198,6 +198,10 @@ export default class HW2Scene extends Scene {
 		// Handle screen despawning of mines and bubbles
 		for (let mine of this.mines) if (mine.visible) this.handleScreenDespawn(mine);
 		for (let bubble of this.bubbles) if (bubble.visible) this.handleScreenDespawn(bubble);
+
+		// Handle player screen wrapping
+		this.wrapPlayer(this.player, this.viewport.getCenter(), this.viewport.getHalfSize());
+		this.lockPlayer(this.player, this.viewport.getCenter(), this.viewport.getHalfSize());
 	}
     /**
      * @see Scene.unloadScene()
@@ -548,29 +552,43 @@ export default class HW2Scene extends Scene {
 		* 							X THIS IS OUT OF BOUNDS
 		*/
 		protected spawnBubble(): void {
-			// Find the first visible bubble
-			// Check if there are any inactive bubbles in the object pool
-			let inactiveBubbles = this.bubbles.filter((bubble: Graphic) => !bubble.visible);
-    
-			if (inactiveBubbles.length === 0) {
-				// If there are no inactive bubbles, do nothing
-				return;
-			}
+
+		let bubble: Graphic = this.bubbles.find((bubble: Graphic) => { return !bubble.visible });
 			
 			// Pick a random inactive bubble from the object pool
-			let bubble = inactiveBubbles[Math.floor(Math.random() * inactiveBubbles.length)];
-			
-			// Set the bubble to be visible
-			bubble.visible = true;
-		
-			// Set the position of the bubble to a random location in the padded region of the viewport
-			let viewportSize = this.viewport.getHalfSize().scaled(2);
-			let paddedViewportSize = viewportSize.clone().add(this.worldPadding);
-			let bubblePosition = RandUtils.randVec(paddedViewportSize.x, paddedViewportSize.x, paddedViewportSize.y - viewportSize.y, viewportSize.y);
+			if (bubble) {
+				bubble.visible = true;
+
+			// Extract the size of the viewport
+			// Loop on position until we're clear of the player
+			let bubblePosition = RandUtils.randVec(this.viewport.getView().left, this.viewport.getView().right, this.viewport.getView().bottom + this.worldPadding.y, this.viewport.getView().bottom);
 			bubble.position.copy(bubblePosition);
-		
-			// Reset the bubble spawn timer
-			this.bubbleSpawnTimer.reset();
+
+
+			bubble.setAIActive(true, {});
+			// Start the mine spawn timer - spawn a mine every half a second I think
+			this.bubbleSpawnTimer.start(50);
+			}
+			// if(inactiveBubbles.length !== 0) { 
+			// 	let bubble = inactiveBubbles[Math.floor(Math.random() * inactiveBubbles.length)];
+				
+			// 	// Set the bubble to be visible
+			// 	bubble.visible = true;
+			
+			// 	// Set the position of the bubble to a random location in the padded region of the viewport
+			// 	// let viewportSize = this.viewport.getHalfSize().scaled(2);
+			// 	// let paddedViewportSize = viewportSize.clone().add(this.worldPadding);
+			// 	// 0 900 836 64
+			// 	// console.log(this.viewport.getView().left, this.viewport.getView().right, this.viewport.getView().bottom + this.worldPadding.y, this.viewport.getView().bottom);
+			// 	let bubblePosition = RandUtils.randVec(this.viewport.getView().left, this.viewport.getView().right, this.viewport.getView().bottom + this.worldPadding.y, this.viewport.getView().bottom);
+			// 	bubble.position.copy(bubblePosition);
+				
+			// 	// Reset the bubble spawn timer
+			// 	this.mineSpawnTimer.start(100);
+			// }
+			// else {
+			// 	this.bubbleSpawnTimer.start(100);
+			// }
 		}
 	/**
 	 * This function takes in a GameNode that may be out of bounds of the viewport and
@@ -616,7 +634,25 @@ export default class HW2Scene extends Scene {
 	 * It may be helpful to make your own drawings while figuring out the math for this part.
 	 */
 	public handleScreenDespawn(node: CanvasNode): void {
-        // TODO - despawn the game nodes when they move out of the padded viewport
+		for (const mine of this.mines) {
+			// console.log(mine)
+			if (mine.visible && mine.position.x < this.viewport.getView().left - this.worldPadding.x) {
+				// Mine has moved off-screen, so despawn it and return it to the object pool
+				mine.visible = false;
+				mine.setAIActive(false, {});
+				this.mineSpawnTimer.reset();
+			}
+		}
+	
+		// Check each bubble to see if it has moved off-screen
+		for (const bubble of this.bubbles) {
+			if (bubble.visible && bubble.position.y < this.viewport.getView().top - this.worldPadding.y) {
+				// Bubble has moved off-screen, so despawn it and return it to the object pool
+				bubble.visible = false;
+				bubble.setAIActive(false, {});
+				this.bubbleSpawnTimer.reset();
+			}
+		}
 	}
 
 	/** Methods for updating the UI */
@@ -776,7 +812,6 @@ export default class HW2Scene extends Scene {
 				bubble.visible = false;
 			}
 		}	
-
 		return collisions;
 	}
 
@@ -909,7 +944,19 @@ export default class HW2Scene extends Scene {
 	 * 							X THIS IS OUT OF BOUNDS													
 	 */
 	protected wrapPlayer(player: CanvasNode, viewportCenter: Vec2, viewportHalfSize: Vec2): void {
-		// TODO wrap the player around the top/bottom of the screen
+		const playerPos = player.position;
+
+    // Check if the player has moved halfway off the top or bottom of the viewport
+		if (playerPos.y < viewportCenter.y - viewportHalfSize.y - this.worldPadding.y) {
+			// The player has moved halfway off the top of the viewport
+			playerPos.y = viewportCenter.y + viewportHalfSize.y + this.worldPadding.y;
+		} else if (playerPos.y > viewportCenter.y + viewportHalfSize.y + this.worldPadding.y) {
+			// The player has moved halfway off the bottom of the viewport
+			playerPos.y = viewportCenter.y - viewportHalfSize.y - this.worldPadding.y;
+		}
+
+    // Update the player's position
+    player.position = playerPos;
 	}
 
     /**
@@ -951,9 +998,29 @@ export default class HW2Scene extends Scene {
 	 * 							X THIS IS OUT OF BOUNDS	
 	 * 
 	 */
-	protected lockPlayer(player: CanvasNode, viewportCenter: Vec2, viewportHalfSize: Vec2): void {
-		// TODO prevent the player from moving off the left/right side of the screen
-	}
+	 protected lockPlayer(player: CanvasNode, viewportCenter: Vec2, viewportHalfSize: Vec2): void {
+		//450 - 450 + 128
+		const leftEdge = viewportCenter.x - viewportHalfSize.x;
+		const rightEdge = viewportCenter.x + viewportHalfSize.x;
+		// check if player is beyond left edge
+		// if (player.position.x < leftEdge) {
+		//   player.position.x = leftEdge;
+		// }
+		// // check if player is beyond right edge
+		// else if (player.position.x > rightEdge) {
+		//   player.position.x = rightEdge;
+		// }
+		// console.log(player.boundary.left);
+		//This does the same as the top two ifs
+		// player.position.x = Math.min(Math.max(player.position.x, leftEdge), rightEdge);
+		if(player.boundary.left < leftEdge) {
+			player.position.x = player.boundary.right/2;
+		}
+		else if(player.boundary.right > rightEdge) {
+			player.position.x = viewportCenter.scale(2).x - (player.boundary.right - player.boundary.left)/2;
+		}
+
+	  }
 
 	public handleTimers(): void {
 		// If the mine timer is stopped, try to spawn a mine
