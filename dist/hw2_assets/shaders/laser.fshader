@@ -1,13 +1,15 @@
 precision mediump float;
 
+uniform vec4 laser_color;
 varying vec4 v_Position;
 
 /**
  * Macros that define constants used in the fragment shader program. 
  */
 #define MIN_DISTANCE 0.00
-#define MAX_DISTANCE 0.02
+#define MAX_DISTANCE 0.6
 #define MIDLINE 0.0
+#define TEST 0.5
 
 /**
  *  This function generates the appropriate alpha value for the fragment color
@@ -43,14 +45,15 @@ float linear_laser(vec4 position);
 
 // TODO Need to somehow pass in the color from the laser shader type
 void main(){
-    gl_FragColor = vec4(255, 0, 0, 1.0);
-	gl_FragColor.a = linear_laser(v_Position);
+    gl_FragColor = vec4(laser_color);
+	gl_FragColor.a = sinwave_laser(v_Position);
 }
 
 
 // TODO Get the laser to look like a sinwave
 float sinwave_laser(vec4 position) {
-    return 1.0;
+    float dist = distance(position.y, TEST);
+	return 1.0 - smoothstep(MIN_DISTANCE, MAX_DISTANCE, dist);
 }
 
 float linear_laser(vec4 position) {
