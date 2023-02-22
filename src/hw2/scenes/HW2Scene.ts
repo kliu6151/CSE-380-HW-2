@@ -67,6 +67,12 @@ export default class HW2Scene extends Scene {
     // The seed that should be set before the game starts
     private seed: string;
 
+	// The recorder that will be initiated if this scene is being recorded
+	private recorder: BasicRecording;
+
+	//A flag to indicate whether or not the game is over
+	private gameOver: boolean = false;
+
 	// Sprites for the background images
 	private bg1: Sprite;
 	private bg2: Sprite;
@@ -162,13 +168,19 @@ export default class HW2Scene extends Scene {
 		// Initialize object pools
 		this.initObjectPools();
 
+		// Initialize the recording
+		this.initRecorder();
+
 		// Subscribe to player events
 		this.receiver.subscribe(HW2Events.CHARGE_CHANGE);
 		this.receiver.subscribe(HW2Events.SHOOT_LASER);
 		this.receiver.subscribe(HW2Events.DEAD);
 		this.receiver.subscribe(HW2Events.HEALTH_CHANGE);
 		this.receiver.subscribe(HW2Events.AIR_CHANGE);
-		// this.receiver.subscribe(HW2Events.PLAYER_BUBBLE_COLLISION);
+
+		//subscribe to recording events
+		// this.receiver.subscribe(GameEventType.START_RECORDING);
+		// this.receiver.subscribe(GameEventType.STOP_RECORDING);
 
 		// Subscribe to laser events
 		this.receiver.subscribe(HW2Events.FIRING_LASER);
@@ -230,7 +242,10 @@ export default class HW2Scene extends Scene {
 				break;
 			}
 			case HW2Events.DEAD: {
-				this.gameOverTimer.start();
+				if(!this.gameOver) {
+					this.gameOver = true;
+					this.gameOverTimer.start();
+				}
 				break;
 			}
 			case HW2Events.CHARGE_CHANGE: {
@@ -435,6 +450,17 @@ export default class HW2Scene extends Scene {
 			this.lasers[i].color = Color.RED;
 			this.lasers[i].visible = false;
 			this.lasers[i].addAI(LaserBehavior, {src: Vec2.ZERO, dst: Vec2.ZERO});
+		}
+	}
+
+	/**
+	 * This method initializes the recorder for the scene.
+	 * Uses HW2Scene as the scene and the seed is taken from the main menu generation.
+	 */
+	protected initRecorder(): void {
+		if(this.recording) {
+			this.recorder = new BasicRecording(HW2Scene, {seed: this.seed})
+			this.emitter.fireEvent(GameEventType.START_RECORDING, {recording: this.recorder});
 		}
 	}
 
@@ -1033,6 +1059,7 @@ export default class HW2Scene extends Scene {
 		}
 		// If the game-over timer has run, change to the game-over scene
 		if (this.gameOverTimer.hasRun() && this.gameOverTimer.isStopped()) {
+			this.emitter.fireEvent(GameEventType.STOP_RECORDING, {});
 		 	this.sceneManager.changeToScene(GameOver, {
 				bubblesPopped: this.bubblesPopped, 
 				minesDestroyed: this.minesDestroyed,

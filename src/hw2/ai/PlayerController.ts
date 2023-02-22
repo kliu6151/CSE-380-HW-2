@@ -217,8 +217,8 @@ export default class PlayerController implements AI {
 
 	protected handleDeadEvent(event: GameEvent): void {
 		this.owner.animation.play(PlayerAnimations.DEATH, true);
-		this.owner.animation.stop();
-		this.destroy();
+		// this.owner.animation.stop();
+		// this.destroy();
 	}
 
 	protected handleMineCollisionEvent(event: GameEvent): void {

@@ -54,6 +54,7 @@ export default class MainMenu extends Scene {
         play.backgroundColor = Color.TRANSPARENT;
         play.onClickEventId = MainMenuEvent.PLAY_GAME;
 
+
         // Add controls button
         const controls = this.add.uiElement(UIElementType.BUTTON, MainMenuLayer.MAIN_MENU, {position: new Vec2(center.x, center.y), text: "Controls"});
         controls.size.set(200, 50);
@@ -158,7 +159,7 @@ export default class MainMenu extends Scene {
                 break;
             }
             case MainMenuEvent.PLAY_RECORDING: {
-                // TODO play the recording here
+                this.emitter.fireEvent(GameEventType.PLAY_RECORDING, {onEnd: ()=>{this.sceneManager.changeToScene(MainMenu);}})
                 break;
             }
             default: {
