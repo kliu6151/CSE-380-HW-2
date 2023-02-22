@@ -7,9 +7,9 @@ varying vec4 v_Position;
  * Macros that define constants used in the fragment shader program. 
  */
 #define MIN_DISTANCE 0.00
-#define MAX_DISTANCE 0.6
-#define MIDLINE 0.0
-#define TEST 0.5
+#define MAX_DISTANCE 0.02
+#define MIDLINE 0.01
+#define TEST 3
 
 /**
  *  This function generates the appropriate alpha value for the fragment color
@@ -52,7 +52,7 @@ void main(){
 
 // TODO Get the laser to look like a sinwave
 float sinwave_laser(vec4 position) {
-    float dist = distance(position.y, TEST);
+	float dist = distance(position.y, 0.008*sin(position.x*150.0));
 	return 1.0 - smoothstep(MIN_DISTANCE, MAX_DISTANCE, dist);
 }
 
