@@ -121,7 +121,9 @@ export default class HW2Scene extends Scene {
 	 */
 	public override initScene(options: Record<string, any>): void {
 		this.seed = options.seed === undefined ? RandUtils.randomSeed() : options.seed;
-        this.recording = options.recording === undefined ? false : options.recording; 
+        this.recording = options.recording === undefined ? false : options.recording;
+		RandUtils.seed = this.seed;
+	
 	}
 	/**
 	 * @see Scene.loadScene()

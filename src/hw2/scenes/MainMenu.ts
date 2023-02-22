@@ -31,12 +31,16 @@ export default class MainMenu extends Scene {
     private mainMenu: Layer;
     private controls: Layer;
     private about: Layer;
+    private generatedSeed: string;
 
     public override startScene(){
         const center = this.viewport.getCenter();
 
         // Main menu screen
         this.mainMenu = this.addUILayer(MainMenuLayer.MAIN_MENU);
+
+        this.generatedSeed = RandUtils.randomSeed();
+
 
         // Controls screen
         this.controls = this.addUILayer(MainMenuLayer.CONTROLS);
@@ -139,7 +143,8 @@ export default class MainMenu extends Scene {
     protected handleEvent(event: GameEvent): void {
         switch(event.type) {
             case MainMenuEvent.PLAY_GAME: {
-                this.sceneManager.changeToScene(Homework1_Scene, {seed: RandUtils.randomSeed(), recording: true});
+                RandUtils.seed = this.generatedSeed;
+                this.sceneManager.changeToScene(Homework1_Scene, {seed: this.generatedSeed, recording: true});
                 break;
             }
             case MainMenuEvent.CONTROLS: {
